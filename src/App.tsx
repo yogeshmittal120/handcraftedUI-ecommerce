@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import './App.css'
 
 type Product = {
@@ -41,6 +41,7 @@ function money(amount: number) {
 
 export default function App() {
   const [search, setSearch] = useState('')
+  const [sortOrder, setSortOrder] = useState('featured')
   const [category, setCategory] = useState('All finds')
   const [authMode, setAuthMode] = useState<AuthMode>(null)
   const [cartOpen, setCartOpen] = useState(false)
@@ -49,11 +50,16 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
 
-  const filteredProducts = useMemo(() => products.filter((product) => {
+  const filteredProducts = useMemo(() => {
+    const matching = products.filter((product) => {
     const categoryMatch = category === 'All finds' || product.category === category
     const searchMatch = (product.name + ' ' + product.category).toLowerCase().includes(search.toLowerCase())
     return categoryMatch && searchMatch
-  }), [category, search])
+    })
+    if (sortOrder === 'low') matching.sort((a, b) => a.price - b.price)
+    if (sortOrder === 'high') matching.sort((a, b) => b.price - a.price)
+    return matching
+  }, [category, search, sortOrder])
 
   const cartItems = products.filter((product) => cart[product.id])
   const cartCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)
@@ -73,7 +79,7 @@ export default function App() {
     })
   }
 
-  function submitAuth(event: React.FormEvent<HTMLFormElement>) {
+  function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (authMode === 'forgot') {
       setNotice('If an account exists for that email, reset instructions will be sent.')
@@ -146,7 +152,7 @@ export default function App() {
         <section className="shop-section" id="shop">
           <div className="section-heading">
             <div><div className="eyebrow">A FEW GOOD FINDS</div><h2>{search ? 'Search results' : category === 'All finds' ? 'Your next favourite thing.' : category + '.'}</h2><p>Everyday essentials, with a little extra something.</p></div>
-            <div className="sort-wrap"><span>{filteredProducts.length} items</span><select aria-label="Sort products" onChange={(event) => { if (event.target.value === 'low') setCategory(category); }}><option value="featured">Sort: Featured</option><option value="low">Price: Low to high</option></select></div>
+            <div className="sort-wrap"><span>{filteredProducts.length} items</span><select aria-label="Sort products" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="featured">Sort: Featured</option><option value="low">Price: Low to high</option><option value="high">Price: High to low</option></select></div>
           </div>
           <div className="product-grid">
             {filteredProducts.map((product, index) => <article className="product-card" key={product.id}>
